@@ -12,7 +12,7 @@ permissions:
   id-token: write
 
 jobs:
-  laravel-deploy:
+  build:
     runs-on: ubuntu-latest
     
     services:
@@ -90,15 +90,20 @@ jobs:
       run: |
         npm run build
 
-    - name: Setup Pages
-      uses: actions/configure-pages@v3
-
     - name: Upload artifact
-      uses: actions/upload-pages-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
+        name: github-pages
         path: public
 
-    - name: Deploy to GitHub Pages
-      uses: actions/deploy-pages@v2
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }} 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2 
