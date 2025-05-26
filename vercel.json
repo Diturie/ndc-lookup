@@ -1,21 +1,22 @@
 {
     "version": 2,
     "framework": null,
-    "functions": {
-        "api/index.php": {
-            "runtime": "vercel-php@0.6.0"
-        }
-    },
+    "buildCommand": "chmod +x vercel-build.sh && ./vercel-build.sh",
     "routes": [
+        {
+            "src": "/(css|js|images|fonts|build)/(.*)",
+            "dest": "/public/$1/$2"
+        },
         {
             "src": "/(.*)",
             "dest": "/api/index.php"
         }
     ],
     "env": {
+        "APP_NAME": "NDC Lookup",
         "APP_ENV": "production",
         "APP_DEBUG": "false",
-        "APP_URL": "https://${VERCEL_URL}",
+        "APP_URL": "https://ndc-lookup.vercel.app",
         "APP_CONFIG_CACHE": "/tmp/config.php",
         "APP_EVENTS_CACHE": "/tmp/events.php",
         "APP_PACKAGES_CACHE": "/tmp/packages.php",
@@ -25,8 +26,17 @@
         "CACHE_DRIVER": "array",
         "LOG_CHANNEL": "stderr",
         "SESSION_DRIVER": "cookie",
-        "VIEW_COMPILED_PATH": "/tmp/views",
         "SSR_TEMP_PATH": "/tmp/ssr",
         "NODE_PATH": "node"
-    }
+    },
+    "builds": [
+        {
+            "src": "api/index.php",
+            "use": "vercel-php@0.6.0"
+        },
+        {
+            "src": "public/**",
+            "use": "@vercel/static"
+        }
+    ]
 } 

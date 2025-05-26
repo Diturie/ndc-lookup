@@ -1,15 +1,37 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NDC Lookup</title>
-    <script>
-        // Redirect all requests to index.php
-        window.location.href = '/ndc-lookup/index.php';
-    </script>
+    <link href="/ndc-lookup/build/assets/app.css" rel="stylesheet">
+    <script src="/ndc-lookup/build/assets/app.js" defer></script>
 </head>
 <body>
-    <h1>Redirecting...</h1>
-    <p>If you are not redirected automatically, please <a href="/ndc-lookup/index.php">click here</a>.</p>
+    <div id="app">
+        <div class="min-h-screen bg-gray-100">
+            <main>
+                <div class="py-12">
+                    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                        <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
+                            <h1 class="text-2xl font-semibold mb-6">NDC Lookup</h1>
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="ndc" class="block text-sm font-medium text-gray-700">Enter NDC Code</label>
+                                    <input type="text" id="ndc" name="ndc" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <button type="button" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    Search
+                                </button>
+                            </div>
+                            <div id="results" class="mt-6">
+                                <!-- Results will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
 </body>
 </html> 
