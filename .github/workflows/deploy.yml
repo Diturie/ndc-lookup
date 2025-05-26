@@ -10,6 +10,18 @@ jobs:
   laravel-deploy:
     runs-on: ubuntu-latest
     
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: laravel
+          MYSQL_USER: user
+          MYSQL_PASSWORD: secret
+          MYSQL_ROOT_PASSWORD: secret
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
     steps:
     - uses: actions/checkout@v3
     
@@ -17,24 +29,21 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: '8.2'
-        extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, iconv, json, mbstring, pdo
-        
-    - name: Create Database Directory
-      run: |
-        mkdir -p database
-        touch database/database.sqlite
-        chmod -R 777 database
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, iconv, json, mbstring, pdo
         
     - name: Setup Environment
       run: |
         cp .env.example .env
         echo "APP_KEY=base64:$(openssl rand -base64 32)" >> .env
-        echo "DB_CONNECTION=sqlite" >> .env
-        echo "DB_DATABASE=$GITHUB_WORKSPACE/database/database.sqlite" >> .env
+        echo "DB_CONNECTION=mysql" >> .env
+        echo "DB_HOST=127.0.0.1" >> .env
+        echo "DB_PORT=3306" >> .env
+        echo "DB_DATABASE=laravel" >> .env
+        echo "DB_USERNAME=user" >> .env
+        echo "DB_PASSWORD=secret" >> .env
         echo "APP_ENV=production" >> .env
         echo "APP_DEBUG=true" >> .env
         echo "APP_URL=https://diturie.github.io/ndc-lookup" >> .env
-        cat .env
         
     - name: Install Dependencies
       run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
@@ -43,7 +52,6 @@ jobs:
       run: |
         chmod -R 777 storage
         chmod -R 777 bootstrap/cache
-        chmod -R 777 database
         
     - name: Clear Configuration
       run: |
@@ -53,9 +61,6 @@ jobs:
         
     - name: Configure Application
       run: |
-        echo "Current directory: $(pwd)"
-        echo "Database exists: $(test -f database/database.sqlite && echo 'Yes' || echo 'No')"
-        echo "Database permissions: $(ls -l database/database.sqlite)"
         php artisan migrate --force --no-interaction
         php artisan config:cache
         php artisan route:cache
