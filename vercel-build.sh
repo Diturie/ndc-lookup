@@ -5,28 +5,31 @@ set -e
 
 echo "🚀 Starting build process..."
 
+# Ensure PHP extensions directory exists
+mkdir -p .vercel/php/extensions
+
 # Install PHP dependencies with proper error handling
 echo "Installing PHP dependencies..."
-composer install --no-dev --optimize-autoloader --no-interaction
+PHP_INI_SCAN_DIR=api composer install --no-dev --optimize-autoloader --no-interaction
 
 # Generate application key if not set
 echo "Generating application key..."
-php artisan key:generate --force
+PHP_INI_SCAN_DIR=api php artisan key:generate --force
 
 # Clear and cache configuration
 echo "Caching configuration..."
-php artisan config:clear
-php artisan config:cache
+PHP_INI_SCAN_DIR=api php artisan config:clear
+PHP_INI_SCAN_DIR=api php artisan config:cache
 
 # Clear and cache routes
 echo "Caching routes..."
-php artisan route:clear
-php artisan route:cache
+PHP_INI_SCAN_DIR=api php artisan route:clear
+PHP_INI_SCAN_DIR=api php artisan route:cache
 
 # Clear and cache views
 echo "Caching views..."
-php artisan view:clear
-php artisan view:cache
+PHP_INI_SCAN_DIR=api php artisan view:clear
+PHP_INI_SCAN_DIR=api php artisan view:cache
 
 # Install Node.js dependencies and build assets
 echo "Installing Node.js dependencies..."
