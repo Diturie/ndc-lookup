@@ -93,6 +93,16 @@ jobs:
       run: |
         npm run build
 
+    - name: Prepare deployment
+      run: |
+        cp public/index.php public/index.html
+        echo "Options -MultiViews -Indexes" > public/.htaccess
+        echo "RewriteEngine On" >> public/.htaccess
+        echo "RewriteBase /ndc-lookup/" >> public/.htaccess
+        echo "RewriteCond %{REQUEST_FILENAME} !-d" >> public/.htaccess
+        echo "RewriteCond %{REQUEST_FILENAME} !-f" >> public/.htaccess
+        echo "RewriteRule ^ index.php [L]" >> public/.htaccess
+
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
       with:
