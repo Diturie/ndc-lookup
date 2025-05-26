@@ -6,13 +6,8 @@ on:
   pull_request:
     branches: [ "main" ]
 
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     
     services:
@@ -28,7 +23,8 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
     
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
@@ -90,22 +86,10 @@ jobs:
       run: |
         npm run build
 
-    - name: Setup Pages
-      uses: actions/configure-pages@v3
-
-    - name: Upload Pages artifact
-      uses: actions/upload-pages-artifact@v1
+    - name: Deploy to GitHub Pages
+      uses: JamesIves/github-pages-deploy-action@v4
       with:
-        path: public
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2 
+        branch: gh-pages
+        folder: public
+        clean: true
+        single-commit: true 
