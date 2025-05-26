@@ -31,10 +31,19 @@ jobs:
         php-version: '8.2'
         extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, iconv, json, mbstring, pdo
         
-    - name: Setup Environment
+    - name: Copy .env
+      run: cp .env.example .env
+        
+    - name: Install Dependencies
+      run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+      
+    - name: Generate App Key
       run: |
-        cp .env.example .env
-        echo "APP_KEY=base64:$(openssl rand -base64 32)" >> .env
+        APP_KEY=$(php artisan key:generate --show)
+        echo "APP_KEY=$APP_KEY" >> .env
+        
+    - name: Configure Environment
+      run: |
         echo "DB_CONNECTION=mysql" >> .env
         echo "DB_HOST=127.0.0.1" >> .env
         echo "DB_PORT=3306" >> .env
@@ -45,26 +54,19 @@ jobs:
         echo "APP_DEBUG=true" >> .env
         echo "APP_URL=https://diturie.github.io/ndc-lookup" >> .env
         
-    - name: Install Dependencies
-      run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
-      
     - name: Directory Permissions
       run: |
         chmod -R 777 storage
         chmod -R 777 bootstrap/cache
         
-    - name: Clear Configuration
+    - name: Cache Configuration
       run: |
-        php artisan config:clear
-        php artisan cache:clear
-        php artisan view:clear
-        
-    - name: Configure Application
-      run: |
-        php artisan migrate --force --no-interaction
         php artisan config:cache
         php artisan route:cache
         php artisan view:cache
+        
+    - name: Run Database Migrations
+      run: php artisan migrate --force --no-interaction
         
     - name: Install NPM dependencies
       run: npm install --no-audit --no-fund --no-optional
