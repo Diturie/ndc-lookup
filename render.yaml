@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: ndc-lookup
+    env: php
+    buildCommand: "./render-build.sh"
+    startCommand: "heroku-php-apache2 public/"
+    envVars:
+      - key: APP_NAME
+        value: NDC Lookup
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        fromService:
+          type: web
+          name: ndc-lookup
+          property: host
+      - key: CACHE_DRIVER
+        value: file
+      - key: SESSION_DRIVER
+        value: cookie
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: APP_KEY
+        generateValue: true
+    autoDeploy: true 
