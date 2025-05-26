@@ -280,3 +280,4 @@ For support, please open an issue in the GitHub repository or contact the develo
 - OpenFDA API for providing NDC data
 - Laravel and Livewire communities
 - Contributors and testers
+
