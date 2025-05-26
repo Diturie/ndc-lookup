@@ -67,13 +67,22 @@ jobs:
         
     - name: Run Database Migrations
       run: php artisan migrate --force --no-interaction
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
         
     - name: Install NPM dependencies
-      run: npm install --no-audit --no-fund --no-optional
+      run: |
+        rm -rf node_modules
+        rm -f package-lock.json
+        npm cache clean --force
+        npm install
       
     - name: Build assets
       run: |
-        mkdir -p public/build
         npm run build
         
     - name: Deploy to GitHub Pages
