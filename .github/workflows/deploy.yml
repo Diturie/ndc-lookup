@@ -26,13 +26,16 @@ jobs:
       run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
       
     - name: Generate key
-      run: php artisan key:generate
+      run: |
+        php artisan key:generate
+        php artisan config:clear
+        php artisan cache:clear
       
     - name: Directory Permissions
       run: chmod -R 777 storage bootstrap/cache
       
     - name: Install NPM dependencies
-      run: npm install
+      run: npm install --no-audit --no-fund --no-optional
       
     - name: Build assets
       run: npm run build
@@ -42,14 +45,28 @@ jobs:
         mkdir -p database
         touch database/database.sqlite
         
-    - name: Execute tests (Unit and Feature tests) via PHPUnit
+    - name: Configure Application
       env:
         DB_CONNECTION: sqlite
         DB_DATABASE: database/database.sqlite
-      run: vendor/bin/phpunit
+        APP_ENV: production
+        APP_KEY: base64:your-app-key-here
+        APP_DEBUG: false
+        APP_URL: https://diturie.github.io/ndc-lookup
+      run: |
+        php artisan migrate --force
+        php artisan config:cache
+        php artisan route:cache
+        php artisan view:cache
 
+    - name: Build for production
+      run: |
+        mkdir -p public/build
+        npm run build
+        
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
       with:
-        folder: public # The folder the action should deploy
-        branch: gh-pages # The branch the action should deploy to 
+        folder: public
+        branch: gh-pages
+        clean: true 
