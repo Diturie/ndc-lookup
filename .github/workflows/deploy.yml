@@ -19,39 +19,39 @@ jobs:
         php-version: '8.2'
         extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, iconv, json, mbstring, pdo
         
-    - name: Copy .env
-      run: |
-        cp .env.example .env
-        sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|g" .env
-        sed -i "s|DB_DATABASE=.*|DB_DATABASE=$GITHUB_WORKSPACE/database/database.sqlite|g" .env
-      
-    - name: Install Dependencies
-      run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
-      
     - name: Create Database Directory
       run: |
         mkdir -p database
         touch database/database.sqlite
         chmod -R 777 database
         ls -la database/
-        echo "Database path: $GITHUB_WORKSPACE/database/database.sqlite"
         
-    - name: Generate key
+    - name: Copy .env
       run: |
-        php artisan key:generate
+        cp .env.example .env
+        sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|g" .env
+        sed -i "s|DB_DATABASE=.*|DB_DATABASE=$GITHUB_WORKSPACE/database/database.sqlite|g" .env
+        php -r "file_exists('.env') || copy('.env.example', '.env');"
         
+    - name: Install Dependencies
+      run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+      
     - name: Directory Permissions
       run: |
         chmod -R 777 storage
         chmod -R 777 bootstrap/cache
-        chmod -R 777 database/database.sqlite
-      
-    - name: Clear Configuration
+        chmod -R 777 database
+        
+    - name: Generate Application Key
       run: |
+        php artisan key:generate --force
         php artisan config:clear
         php artisan cache:clear
         php artisan view:clear
-      
+      env:
+        DB_CONNECTION: sqlite
+        DB_DATABASE: ${{ github.workspace }}/database/database.sqlite
+        
     - name: Configure Application
       env:
         DB_CONNECTION: sqlite
@@ -62,6 +62,7 @@ jobs:
       run: |
         echo "Current directory: $(pwd)"
         echo "Database exists: $(test -f database/database.sqlite && echo 'Yes' || echo 'No')"
+        echo "Database permissions: $(ls -l database/database.sqlite)"
         php artisan migrate --force --no-interaction
         php artisan config:cache
         php artisan route:cache
