@@ -8,20 +8,30 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * ProductController handles all NDC (National Drug Code) product-related operations
+ * This controller manages searching, retrieving, and caching drug information
+ * from both local database and OpenFDA API
+ */
 class ProductController extends Controller
 {
     protected $openFdaService;
 
+    /**
+     * Constructor - Inject the OpenFDA service dependency
+     */
     public function __construct(OpenFdaService $openFdaService)
     {
         $this->openFdaService = $openFdaService;
     }
 
     /**
-     * Kryen kërkimin e produkteve bazuar në kodet NDC
+     * Search for products based on NDC codes
+     * This method handles both single and multiple NDC code searches
+     * It first checks the local database, then queries OpenFDA API for missing codes
      * 
-     * @param Request $request Request object që përmban kodet NDC
-     * @return \Illuminate\View\View Pamja me rezultatet e kërkimit
+     * @param Request $request Contains NDC codes in comma-separated format
+     * @return \Illuminate\View\View Returns view with search results
      */
     public function search(Request $request)
     {
@@ -29,34 +39,34 @@ class ProductController extends Controller
             'ndc' => 'required|string|max:255'
         ]);
 
-        // Split and clean NDC codes
+        // Split the input string into individual NDC codes and remove whitespace
         $ndcCodes = array_map('trim', explode(',', $request->input('ndc')));
         $allResults = $request->session()->get('search_results', []);
         $newResults = [];
 
-        // Group NDC codes by source (database vs need API lookup)
+        // First, check our database for existing records
         $databaseProducts = Product::whereIn('ndc_code', $ndcCodes)->get();
         $foundCodes = $databaseProducts->pluck('ndc_code')->toArray();
         
-        // Add database results
+        // Add products found in database to results
         foreach ($databaseProducts as $product) {
             $newResults[] = array_merge($product->toArray(), ['source' => 'Database']);
         }
 
-        // Get codes that need API lookup
+        // Determine which codes need to be looked up in the API
         $codesForApi = array_diff($ndcCodes, $foundCodes);
         
         if (!empty($codesForApi)) {
-            // Make a single API call for all remaining codes
+            // Batch API call for efficiency
             $openFdaResults = $this->searchMultipleNdc($codesForApi);
             
             foreach ($codesForApi as $ndcCode) {
                 if (isset($openFdaResults[$ndcCode])) {
-                    // Save to database and add to results
+                    // Save new products to database and add to results
                     $product = Product::create($openFdaResults[$ndcCode]);
                     $newResults[] = array_merge($product->toArray(), ['source' => 'OpenFDA']);
                 } else {
-                    // Not found in API
+                    // Add not found products to results
                     $newResults[] = [
                         'ndc_code' => $ndcCode,
                         'brand_name' => '-',
@@ -69,20 +79,24 @@ class ProductController extends Controller
             }
         }
 
-        // Add new results to the beginning of all results
+        // Combine new results with existing ones (new results first)
         $allResults = array_merge($newResults, $allResults);
         
-        // Store results in session
+        // Store in session for persistence
         $request->session()->put('search_results', $allResults);
 
         return view('products.search', [
             'results' => $allResults,
-            'searchTerm' => '' // Clear the search term
+            'searchTerm' => '' // Reset search term
         ]);
     }
 
     /**
-     * Search multiple NDC codes in a single API call
+     * Perform a batch search for multiple NDC codes using OpenFDA API
+     * This method optimizes API calls by searching for multiple codes at once
+     * 
+     * @param array $ndcCodes Array of NDC codes to search for
+     * @return array Associative array of found products, keyed by NDC code
      */
     private function searchMultipleNdc(array $ndcCodes): array
     {
@@ -90,10 +104,10 @@ class ProductController extends Controller
             return [];
         }
 
-        // Log that we're making an API call
+        // Log API call for monitoring
         \Log::info('Making OpenFDA API call for codes: ' . implode(', ', $ndcCodes));
 
-        // Build the search query for multiple NDC codes
+        // Construct OpenFDA API query for multiple NDC codes
         $searchQuery = implode(' OR ', array_map(function($code) {
             return "product_ndc:\"$code\"";
         }, $ndcCodes));
@@ -129,10 +143,11 @@ class ProductController extends Controller
     }
 
     /**
-     * Validon formatin e kodit NDC
+     * Validate NDC code format
+     * Ensures the NDC code matches the standard format (XXXX-XXXX or XXXXX-XXXX)
      * 
-     * @param string $ndc Kodi NDC për validim
-     * @return bool True nëse formati është valid
+     * @param string $ndc NDC code to validate
+     * @return bool True if format is valid
      */
     private function isValidNdcFormat(string $ndc): bool
     {
@@ -140,10 +155,11 @@ class ProductController extends Controller
     }
 
     /**
-     * Kërkon produktin në OpenFDA API
+     * Search OpenFDA API for a single NDC code
+     * Includes retry logic and timeout handling
      * 
-     * @param string $ndc Kodi NDC për kërkim
-     * @return array Rezultati i kërkimit me produktin (nëse u gjet)
+     * @param string $ndc NDC code to search
+     * @return array Search result with product data if found
      */
     private function searchOpenFdaApi(string $ndc): array
     {
@@ -169,11 +185,12 @@ class ProductController extends Controller
     }
 
     /**
-     * Formatton rezultatin e produktit për pamjen
+     * Format product data for view display
+     * Standardizes the output format and handles missing data
      * 
-     * @param Product $product Modeli i produktit
-     * @param string $source Burimi i të dhënave
-     * @return array Rezultati i formatuar
+     * @param Product $product Product model instance
+     * @param string $source Data source identifier
+     * @return array Formatted product data
      */
     private function formatProductResult(Product $product, string $source): array
     {
@@ -187,11 +204,12 @@ class ProductController extends Controller
     }
 
     /**
-     * Krijon një rezultat kur produkti nuk gjendet
+     * Create a standardized "not found" result
+     * Used when a product cannot be found in either database or API
      * 
-     * @param string $ndc Kodi NDC
-     * @param string $source Arsyeja e mosgjetjes
-     * @return array Rezultati i formatuar
+     * @param string $ndc NDC code that wasn't found
+     * @param string $reason Reason for not finding the product
+     * @return array Formatted "not found" result
      */
     private function createNotFoundResult(string $ndc, string $reason): array
     {
@@ -205,11 +223,14 @@ class ProductController extends Controller
     }
 
     /**
-     * Show the search form
+     * Display the search form view
+     * Includes any existing search results from the session
+     * 
+     * @return \Illuminate\View\View
      */
     public function showSearchForm()
     {
-        // Get existing results from session
+        // Retrieve existing results from session
         $results = session('search_results', []);
         return view('products.search', [
             'results' => $results,
