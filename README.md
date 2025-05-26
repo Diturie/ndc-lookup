@@ -92,6 +92,22 @@ npm run build
 php artisan serve
 ```
 
+## Development Setup
+
+For development, you need to run two servers simultaneously:
+
+1. Vite development server for asset compilation:
+```bash
+npm run dev
+```
+
+2. Laravel development server (in a separate terminal):
+```bash
+php artisan serve
+```
+
+Both servers must be running for the application to work properly with styles and JavaScript functionality during development.
+
 ## Usage
 
 1. Access the application through your web browser at `http://localhost:8000`

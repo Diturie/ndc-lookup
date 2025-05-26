@@ -30,5 +30,9 @@ class DatabaseSeeder extends Seeder
             'product_type' => 'HUMAN OTC DRUG',
             'source' => 'Database' // This indicates it's our own database entry, not from OpenFDA
         ]);
+
+        $this->call([
+            ProductSeeder::class
+        ]);
     }
 }
